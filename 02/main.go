@@ -177,7 +177,7 @@ func solve2(s string) {
 
 func main() {
 	str := exampleInput1
-	str = openFile("input1.txt")
+	str = openFile("02/input1.txt")
 	solve1(str)
   solve2(str)
 }

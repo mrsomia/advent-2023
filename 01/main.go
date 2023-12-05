@@ -118,9 +118,9 @@ func solve2(str string) {
 }
 
 func main() {
-  str := openFile("input1.txt")
+  str := openFile("01/input1.txt")
   solve1(str)
-  str = openFile("input2.txt")
+  str = openFile("01/input2.txt")
   // str = exampleInput2
   solve2(replace(str))
 }

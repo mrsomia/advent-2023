@@ -252,7 +252,7 @@ func part2(s string) {
 
 
 func main() {
-	str := openFile("input1.txt")
+	str := openFile("03/input1.txt")
 	part1(str)
   part2(str)
 }

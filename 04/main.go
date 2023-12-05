@@ -118,7 +118,7 @@ func part2(s string) {
 }
 
 func main() {
-	s := openFile("input1.txt")
+	s := openFile("04/input1.txt")
   part1(s)
   part2(s)
 }
