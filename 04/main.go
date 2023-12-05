@@ -91,15 +91,34 @@ func part1(s string) {
 func part2(s string) {
   initialCards := parseInput(s)
   finalCards := map[int]int{}
+  // loop through cards and add to finalCards
+  for _, card := range initialCards {
+    finalCards[card.number] = 1
+  }
   // loop through cards
+  for _, card := range initialCards {
     // Get score for each card
-    // add new cards to a map? add to a total
-    // 
+    cardScore := 0
+    for _, num := range card.left {
+      if slices.Contains(card.right, num) {
+        cardScore += 1
+      }
+    }
+    // Update total number of cards
+    for i:= card.number+1; i < card.number + cardScore + 1; i++ {
+      finalCards[i] += 1 * finalCards[card.number]
+    }
+  }
+  //  loop through finalCards and sum up total
+  r:= 0
+  for _, v := range finalCards {
+    r += v
+  }
+  fmt.Println(r)
 }
 
 func main() {
 	s := openFile("input1.txt")
   part1(s)
-  s = openFile("exampleinput1.txt")
   part2(s)
 }
