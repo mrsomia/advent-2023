@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -15,6 +16,8 @@ func openFile(s string) string {
 	}
 	return string(constents)
 }
+
+var seedMaps map[string]seedMap
 
 type seedMap struct {
 	name      string
@@ -81,6 +84,7 @@ func parseInput(s string) ([]int, map[string]seedMap) {
 		maps[dstElement] = seedMap
 
 	}
+	seedMaps = maps
 	return seeds, maps
 }
 
@@ -115,7 +119,144 @@ func part1(s string) {
 	fmt.Println(min)
 }
 
+type seedRange struct {
+	minSeed  int
+	len      int
+	mapToCat string
+	mapToNum int
+}
+
+func part2(s string) {
+	seeds, seedMaps := parseInput(s)
+
+	seedRanges := make([]seedRange, 0)
+	for i := 0; i < len(seeds)-1; i += 2 {
+		seed := seeds[i]
+		rangeLen := seeds[i+1]
+		seedrange := seedRange{
+			minSeed:  seed,
+			len:      rangeLen,
+			mapToCat: "seed",
+			mapToNum: seed,
+		}
+		seedRanges = append(seedRanges, seedrange)
+	}
+
+	categoryOrder := []string{
+		"soil",
+		"fertilizer",
+		"water",
+		"light",
+		"temperature",
+		"humidity",
+		"location",
+	}
+
+	currentMin := math.MaxInt
+
+	for _, category := range categoryOrder {
+		catMap := seedMaps[category]
+		seedRanges = processSeedRanges(seedRanges, catMap)
+	}
+
+	for _, sr := range seedRanges {
+		if sr.mapToNum < currentMin {
+			currentMin = sr.mapToNum
+			fmt.Printf("New Current Min: %v\n", currentMin)
+		}
+	}
+}
+
+func processSeedRanges(seedRanges []seedRange, catMap seedMap) (mapped []seedRange) {
+	for _, sr := range seedRanges {
+		// loop over catMap numranges
+		wasMapped := false
+		for _, mapRange := range catMap.numRanges {
+			mapRangeLeft := mapRange.srcStart
+			mapRangeRight := mapRange.srcStart + mapRange.rangeLen
+			srLeft := sr.mapToNum
+			srRight := sr.mapToNum + sr.len
+			switch {
+			case srLeft >= mapRangeLeft && srRight <= mapRangeRight:
+				// Whole of the seed range is covered
+				sr.mapToCat = catMap.dstElem
+				mapped = append(mapped, sr)
+				wasMapped = true
+			case srLeft < mapRangeLeft && srRight <= mapRangeRight:
+				// Right of left that is covered
+				newRange := seedRange{
+					minSeed:  sr.minSeed + mapRangeLeft - srLeft,
+					mapToCat: catMap.dstElem,
+					mapToNum: mapRange.dstStart,
+					len:      srRight - mapRangeLeft,
+				}
+				mapped = append(mapped, newRange)
+				// start of Left is not covered
+				sr.len = mapRangeLeft - srLeft
+				seedRanges = append(seedRanges, sr) // Add to back to see if covered by another region
+				wasMapped = true
+
+			case srLeft > mapRangeLeft && srRight > mapRangeRight:
+				// right side that's not covered
+				newRange := seedRange{
+					minSeed:  sr.minSeed + mapRangeRight - srLeft,
+					mapToCat: catMap.srcElem,
+					mapToNum: sr.mapToNum + mapRangeRight - srLeft,
+					len:      mapRangeRight - srRight,
+				}
+				seedRanges = append(seedRanges, newRange)
+
+				sr.mapToCat = catMap.dstElem
+				sr.len = mapRangeRight - srLeft
+				sr.mapToNum = mapRange.dstStart + srLeft - mapRangeLeft
+				mapped = append(mapped, sr)
+				wasMapped = true
+
+			case srLeft < mapRangeLeft && srRight > mapRangeRight:
+				// map the middle and create 2 new ranges for either side
+				leftRange := seedRange{
+					minSeed:  sr.minSeed,
+					mapToCat: sr.mapToCat,
+					mapToNum: sr.mapToNum,
+					len:      mapRangeLeft - srLeft,
+				}
+				seedRanges = append(seedRanges, leftRange)
+				rightRange := seedRange{
+					minSeed:  sr.minSeed + mapRangeRight - srLeft,
+					mapToCat: sr.mapToCat,
+					mapToNum: sr.mapToNum + mapRangeRight - srLeft,
+					len:      srRight - mapRangeRight,
+				}
+
+				seedRanges = append(seedRanges, rightRange)
+
+				sr.minSeed = sr.minSeed + mapRangeLeft - srLeft
+				sr.mapToCat = catMap.dstElem
+				sr.mapToNum = mapRange.dstStart
+				sr.len = mapRange.rangeLen
+
+				mapped = append(mapped, sr)
+				wasMapped = true
+			default:
+			}
+		}
+		// if range is not covered map to same numbers in new cat
+		if !wasMapped {
+			newRange := seedRange{
+				minSeed:  sr.minSeed,
+				len:      sr.len,
+				mapToCat: catMap.dstElem,
+				mapToNum: sr.mapToNum,
+			}
+			mapped = append(mapped, newRange)
+
+		}
+	}
+	return mapped
+}
+
 func main() {
-	s := openFile("05/input.txt")
+	s := openFile("05/exampleinput.txt")
 	part1(s)
+	part2(s)
 }
